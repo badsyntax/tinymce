@@ -17,7 +17,7 @@
 		getInfo : function() {
 			return {
 				longname : 'jQueryInlinePopups',
-				author : 'Richard Willis',
+				author : 'badsyntax',
 				authorurl : 'http://badsyntax.co.uk',
 				infourl : '',
 				version : tinymce.majorVersion + "." + tinymce.minorVersion
@@ -37,15 +37,80 @@
 
 		open : function(f, p) {
 
+			f = f || {};
+			p = p || {};
+
+			// Run native windows
+			if (!f.inline)
+				return t.parent(f, p);
+				
 			var 
+				config = {title: f.title || '',
+				width: f.width + 1,
+				height: f.height + 25,
+				modal: true,
+				resizable: false,
+				draggable: true,
+				dialogClass: 'ui-dialog-tinymce'},
 				t = this,
 				id = DOM.uniqueId(),
 				vp = DOM.getViewPort(),
 				w,
-				dialog = $( '<div />' ).attr( 'id', 'dialog-' + id )
+				dialog = $('<div />').attr('id', 'dialog-' + id)
 					.hide()
-					.appendTo('body'),
-				iframe = $( '<iframe />', { id: id })
+					.appendTo('body');
+					
+			if (f.title) 
+				dialog.attr('title', f.title);
+				
+			function buttonAction(e){
+				
+				if (/mceClose/.test(this.className)) {
+					
+					t.close(null, id);
+		
+					Event.cancel(e);
+						
+				} else if (/mceOk/.test(this.className) || /mceCancel/.test(this.className)) {
+			
+					f.button_func(/mceOk/.test(this.className));
+			
+					Event.cancel(e);
+				}				
+			}
+				
+			if (f.content){
+			
+				if (f.type == 'confirm'){
+					config.buttons = 
+						[
+						    {
+								text: "Ok",
+								click: function(e, ui) {
+							
+									buttonAction.call(e.target, e);
+									
+									return false; 
+								},
+						    	class: 'mceOk'
+							},
+							{
+								text: "Cancel",
+								click: function(e, ui) {
+							
+									buttonAction.call(e.target, e);
+									
+									return false; 
+								},
+						    	class: 'mceCancel'
+							}
+						];
+					
+				}
+				dialog.html(f.content);
+			}
+			else {
+				iframe = $('<iframe />', { id: id + '_ifr' })
 					.css({ 
 						width: f.width,
 						height: f.height
@@ -55,52 +120,86 @@
 					})
 					.appendTo(dialog)
 					.attr( 'src', f.url || f.file );
-					
-					f = f || {};
-					p = p || {};
-
-					// Run native windows
-					if (!f.inline)
-						return t.parent(f, p);
-					
+			}
+				
+			p.mce_inline = true;
+			p.mce_window_id = id;
+			p.mce_auto_focus = f.auto_focus;
+						
 			this.features = f;
 			this.params = p;
 			this.onOpen.dispatch(this, f, p);
 			
-			dialog.dialog({
-				title: f.title || '',
-				width: f.width + 1,
-				height: f.height + 25,
-				modal: true,
-				resizable: false,
-				draggable: true,
-				dialogClass: 'ui-dialog-tinymce'
-			});
-			
-			this.dialog = dialog;
+			dialog.dialog(config);		
 			
 			// Add window
 			w = t.windows[id] = {
 				id : id,
-				features : f
-			};			
+				iframeElement : iframe[0],
+				features : f,
+				element: dialog
+			};	
 			
 			t.count++;
+
+			return w;
+		},
+		
+		_findId : function(w) {
+			
+			var t = this;
+
+			if (typeof(w) == 'string')
+				return w;
+
+			each(t.windows, function(wo) {
+				var ifr = DOM.get(wo.id + '_ifr');
+
+				if (ifr && w == ifr.contentWindow) {
+					w = wo.id;
+					return false;
+				}
+			});
 
 			return w;
 		},
 
 		close : function(win, id) {
 			
-			this.dialog.dialog('close');
+			var t = this, w, d = DOM.doc, ix = 0, fw, id;
+
+			id = t._findId(id || win);
+
+			// Probably not inline
+			if (!t.windows[id]) {
+				t.parent(win);
+				return;
+			}
+
+			t.count--;
+
+			if (w = t.windows[id]) {
+				
+				t.onClose.dispatch(t);
+				
+				Event.clear(id);
+				Event.clear(id + '_ifr');
+
+				DOM.setAttrib(id + '_ifr', 'src', 'javascript:""'); // Prevent leak
+				
+				w.element.dialog('destroy').remove();
+				
+				delete t.windows[id];
+			}
 		},
 
 		setTitle : function(w, ti) {
+			
 			var e;
-
+			
 			w = this._findId(w);
-
-			if (e = DOM.get(w + '_title'))
+			
+			if (e = DOM.get('ui-dialog-title-dialog-' + w))
 				e.innerHTML = DOM.encode(ti);
 		},
 
@@ -127,7 +226,7 @@
 			var t = this, w;
 
 			w = t.open({
-				title : t,
+				title: 'Please confirm',
 				type : 'confirm',
 				button_func : function(s) {
 					if (cb)
