@@ -17,8 +17,8 @@
 		getInfo : function() {
 			return {
 				longname : 'jQueryInlinePopups',
-				author : 'badsyntax',
-				authorurl : 'http://badsyntax.co.uk',
+				author : 'Richard Willis',
+				authorurl : 'http://badsyntax.count',
 				infourl : '',
 				version : tinymce.majorVersion + "." + tinymce.minorVersion
 			};
@@ -82,32 +82,31 @@
 			if (f.content){
 			
 				if (f.type == 'confirm'){
-					config.buttons = 
-						[
-						    {
-								text: "Ok",
-								click: function(e, ui) {
-							
-									buttonAction.call(e.target, e);
-									
-									return false; 
-								},
-						    	class: 'mceOk'
+					
+					config.buttons = [
+						{
+							text: "Ok",
+							click: function(e) {
+								buttonAction.call(e.target, e);
+								return false; 
 							},
-							{
-								text: "Cancel",
-								click: function(e, ui) {
-							
-									buttonAction.call(e.target, e);
-									
-									return false; 
-								},
-						    	class: 'mceCancel'
-							}
-						];
+							class: 'mceOk'
+						},
+						{
+							text: "Cancel",
+							click: function(e) {
+								buttonAction.call(e.target, e);
+								return false; 
+							},
+							class: 'mceCancel'
+						}
+					];
 					
 				}
-				dialog.html(f.content);
+				
+				var content = $('<div />').addClass('ui-dialog-tinymce-content').html(f.content);
+				
+				dialog.html(content);
 			}
 			else {
 				iframe = $('<iframe />', { id: id + '_ifr' })
@@ -207,7 +206,7 @@
 			var t = this, w;
 
 			w = t.open({
-				title : t,
+				title : 'Error',
 				type : 'alert',
 				button_func : function(s) {
 					if (cb)
