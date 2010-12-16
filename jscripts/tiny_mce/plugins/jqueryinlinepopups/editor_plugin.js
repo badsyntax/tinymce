@@ -45,67 +45,63 @@
 				return t.parent(f, p);
 				
 			var 
-				config = {title: f.title || '',
-				width: f.width + 1,
-				height: f.height + 25,
-				modal: true,
-				resizable: false,
-				draggable: true,
-				dialogClass: 'ui-dialog-tinymce'},
 				t = this,
+				dialogConfig = {
+					title: f.title || '',
+					width: f.width + 1,
+					height: f.height + 25,
+					modal: true,
+					resizable: false,
+					draggable: true,
+					dialogClass: 'ui-dialog-tinymce'
+				},
+				dialog = $('<div />', { id: 'dialog-' + id})
+					.hide()
+					.appendTo('body'),
 				id = DOM.uniqueId(),
 				vp = DOM.getViewPort(),
-				w,
-				dialog = $('<div />').attr('id', 'dialog-' + id)
-					.hide()
-					.appendTo('body');
-					
+				w = {
+					id : id,
+					features : f,
+					element: dialog
+				};
+			
+			// Set the dialog title
 			if (f.title) 
 				dialog.attr('title', f.title);
 				
-			function buttonAction(e){
-				
-				if (/mceClose/.test(this.className)) {
-					
-					t.close(null, id);
-		
-					Event.cancel(e);
-						
-				} else if (/mceOk/.test(this.className) || /mceCancel/.test(this.className)) {
-			
-					f.button_func(/mceOk/.test(this.className));
-			
-					Event.cancel(e);
-				}				
-			}
-				
 			if (f.content){
-			
-				if (f.type == 'confirm'){
+		
+				// Add buttons for confirm and alert type dialogs
+				if (f.type == 'confirm' || f.type == 'alert'){
 					
-					config.buttons = [
-						{
-							text: "Ok",
-							click: function(e) {
-								buttonAction.call(e.target, e);
-								return false; 
-							},
-							class: 'mceOk'
+					dialogConfig.buttons = [
+					{
+						text: "Ok",
+						click: function(e) {
+							f.button_func(true);
+							Event.cancel(e);
+							return false; 
 						},
-						{
-							text: "Cancel",
-							click: function(e) {
-								buttonAction.call(e.target, e);
-								return false; 
-							},
-							class: 'mceCancel'
-						}
-					];
-					
+						class: 'mceOk'
+					},
+					{
+						text: "Cancel",
+						click: function(e) {
+							Event.cancel(e);
+							return false; 
+						},
+						class: 'mceCancel'
+					}
+					];					
 				}
 				
-				var content = $('<div />').addClass('ui-dialog-tinymce-content').html(f.content);
+				// Wrap the contents in a content division
+				var content = $('<div />')
+					.addClass('ui-dialog-tinymce-content')
+					.html(f.content);
 				
+				// Add content to dialog
 				dialog.html(content);
 			}
 			else {
@@ -119,25 +115,22 @@
 					})
 					.appendTo(dialog)
 					.attr( 'src', f.url || f.file );
+				
+				w.iframeElement = iframe[0],
 			}
 				
 			p.mce_inline = true;
 			p.mce_window_id = id;
-			p.mce_auto_focus = f.auto_focus;
 						
 			this.features = f;
 			this.params = p;
 			this.onOpen.dispatch(this, f, p);
+		
+			// Create and show the dialog
+			dialog.dialog(dialogConfig);
 			
-			dialog.dialog(config);		
-			
-			// Add window
-			w = t.windows[id] = {
-				id : id,
-				iframeElement : iframe[0],
-				features : f,
-				element: dialog
-			};	
+			// Add dialog window
+			t.windows[id] = w;
 			
 			t.count++;
 
