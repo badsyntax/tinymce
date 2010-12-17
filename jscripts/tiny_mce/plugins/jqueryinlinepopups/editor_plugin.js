@@ -3,7 +3,12 @@
  */
 
 (function() {
-	var DOM = tinymce.DOM, Element = tinymce.dom.Element, Event = tinymce.dom.Event, each = tinymce.each, is = tinymce.is;
+	
+	var DOM = tinymce.DOM, 
+		Element = tinymce.dom.Element, 
+		Event = tinymce.dom.Event, 
+		each = tinymce.each, 
+		is = tinymce.is;
 
 	tinymce.create('tinymce.plugins.jQueryInlinePopups', {
 		init : function(ed, url) {
@@ -20,13 +25,14 @@
 				author : 'Richard Willis',
 				authorurl : 'http://badsyntax.count',
 				infourl : '',
-				version : tinymce.majorVersion + "." + tinymce.minorVersion
+				version : '0.1a'
 			};
 		}
 	});
 
 	tinymce.create('tinymce.InlineWindowManager:tinymce.WindowManager', {
 		InlineWindowManager : function(ed) {
+		
 			var t = this;
 
 			t.parent(ed);
@@ -45,8 +51,7 @@
 				return t.parent(f, p);
 				
 			var 
-				t = this,
-				dialogConfig = {
+				config = {
 					title: f.title || '',
 					width: f.width + 1,
 					height: f.height + 25,
@@ -55,57 +60,67 @@
 					draggable: true,
 					dialogClass: 'ui-dialog-tinymce'
 				},
-				dialog = $('<div />', { id: 'dialog-' + id})
+				t = this,
+				id = DOM.uniqueId(),
+				dialog = $('<div />')
+					.attr('id', 'dialog-' + id)
 					.hide()
 					.appendTo('body'),
-				id = DOM.uniqueId(),
-				vp = DOM.getViewPort(),
 				w = {
 					id : id,
 					features : f,
 					element: dialog
 				};
-			
-			// Set the dialog title
+					
 			if (f.title) 
 				dialog.attr('title', f.title);
 				
 			if (f.content){
-		
-				// Add buttons for confirm and alert type dialogs
-				if (f.type == 'confirm' || f.type == 'alert'){
-					
-					dialogConfig.buttons = [
-					{
-						text: "Ok",
-						click: function(e) {
-							f.button_func(true);
+			
+				if (f.type == 'confirm'){
+	
+					function buttonAction(e){
+
+						if (/mceClose/.test(e.target.className)) {
+
+							t.close(null, id);
+
 							Event.cancel(e);
-							return false; 
-						},
-						class: 'mceOk'
-					},
-					{
-						text: "Cancel",
-						click: function(e) {
+
+						} else if (/mceOk/.test(e.target.className) || /mceCancel/.test(e.target.className)) {
+
+							f.button_func(/mceOk/.test(e.target.className));
+
 							Event.cancel(e);
-							return false; 
-						},
-						class: 'mceCancel'
+						}	
+
+						return false;			
 					}
-					];					
+					
+					config.buttons = [
+						{
+							text: "Ok",
+							click: buttonAction,
+							class: 'mceOk'
+						},
+						{
+							text: "Cancel",
+							click: buttonAction,
+							class: 'mceCancel'
+						}
+					];
+					
 				}
 				
-				// Wrap the contents in a content division
 				var content = $('<div />')
 					.addClass('ui-dialog-tinymce-content')
 					.html(f.content);
 				
-				// Add content to dialog
 				dialog.html(content);
 			}
 			else {
-				iframe = $('<iframe />', { id: id + '_ifr' })
+				
+				var iframe = $('<iframe />', { id: id + '_ifr' })
 					.css({ 
 						width: f.width,
 						height: f.height
@@ -116,20 +131,31 @@
 					.appendTo(dialog)
 					.attr( 'src', f.url || f.file );
 				
-				w.iframeElement = iframe[0],
+				w.iframeElement = iframe[0];		
 			}
 				
 			p.mce_inline = true;
 			p.mce_window_id = id;
+			p.mce_auto_focus = f.auto_focus;
 						
 			this.features = f;
 			this.params = p;
 			this.onOpen.dispatch(this, f, p);
-		
-			// Create and show the dialog
-			dialog.dialog(dialogConfig);
+			dialog.dialog(config);
 			
-			// Add dialog window
+			/*
+			var d = dialog.parents('.ui-dialog:first');
+			d.draggable({ helper: function( event ) {
+					
+				return $( "<div>I'm a custom helper</div>" )
+					.css({background: '#eee'})
+					.width(d.width())
+					.height(d.height())
+				;
+			}});
+			*/
+			
+			// Add window
 			t.windows[id] = w;
 			
 			t.count++;
@@ -154,6 +180,16 @@
 			});
 
 			return w;
+		},
+		
+		resizeBy : function(dw, dh, id) {
+		
+			return;
+		},
+		
+		focus : function(id) {
+			
+			return; 
 		},
 
 		close : function(win, id) {
@@ -237,5 +273,3 @@
 	// Register plugin
 	tinymce.PluginManager.add('jqueryinlinepopups', tinymce.plugins.jQueryInlinePopups);
 })();
-
-
