@@ -1,21 +1,28 @@
 /**
- * editor_plugin_src.js
+ * @filename : editor_plugin.js
+ * @description : jQuery UI Inline Popups plugin to replace the default inlinepopups
+ * @developer : badsyntax (Richard Willis)
+ * @contact : http://badsyntax.co
+ * @moreinfo : see this blog post for instructions: http://is.gd/j1FuI
  */
 
 (function() {
-	
+		
 	var DOM = tinymce.DOM, 
 		Element = tinymce.dom.Element, 
 		Event = tinymce.dom.Event, 
 		each = tinymce.each, 
 		is = tinymce.is;
 
+	// Create the editor plugin
 	tinymce.create('tinymce.plugins.jQueryInlinePopups', {
+			
 		init : function(ed, url) {
+
 			// Replace window manager
 			ed.onBeforeRenderUI.add(function() {
+				
 				ed.windowManager = new tinymce.InlineWindowManager(ed);
-				DOM.loadCSS(url + '/skins/' + (ed.settings.jqueryinlinepopups_skin || 'clearlooks2') + "/window.css");
 			});
 		},
 
@@ -30,9 +37,11 @@
 		}
 	});
 
+	// Create the window manager
 	tinymce.create('tinymce.InlineWindowManager:tinymce.WindowManager', {
+			
 		InlineWindowManager : function(ed) {
-		
+			
 			var t = this;
 
 			t.parent(ed);
@@ -71,32 +80,30 @@
 					features : f,
 					element: dialog
 				};
-					
+						
 			if (f.title) 
-				dialog.attr('title', f.title);
+					dialog.attr('title', f.title);
 				
 			if (f.content){
-			
+		
 				if (f.type == 'confirm'){
-	
+
 					function buttonAction(e){
 
 						if (/mceClose/.test(e.target.className)) {
 
 							t.close(null, id);
 
-							Event.cancel(e);
-
 						} else if (/mceOk/.test(e.target.className) || /mceCancel/.test(e.target.className)) {
 
 							f.button_func(/mceOk/.test(e.target.className));
-
-							Event.cancel(e);
-						}	
-
-						return false;			
-					}
+						}
 					
+						Event.cancel(e);		
+
+						return false;					
+					}
+				
 					config.buttons = [
 						{
 							text: "Ok",
@@ -108,63 +115,52 @@
 							click: buttonAction,
 							class: 'mceCancel'
 						}
-					];
-					
+					];										
 				}
-				
-				var content = $('<div />')
+			
+				var content = $('')
 					.addClass('ui-dialog-tinymce-content')
 					.html(f.content);
-				
+			
 				dialog.html(content);
 			}
-			else {
+			else 
+			{
 				
-				var iframe = $('<iframe />', { id: id + '_ifr' })
+				var iframe = $('<iframe />', { 
+						id: id + '_ifr',
+						frameborder: 0 
+					})
 					.css({ 
 						width: f.width,
 						height: f.height
 					})
-					.load(function(){
-
-					})
 					.appendTo(dialog)
 					.attr( 'src', f.url || f.file );
-				
-				w.iframeElement = iframe[0];		
+	
+				w.iframeElement = iframe[0];			
 			}
 				
 			p.mce_inline = true;
 			p.mce_window_id = id;
 			p.mce_auto_focus = f.auto_focus;
-						
+					
 			this.features = f;
 			this.params = p;
 			this.onOpen.dispatch(this, f, p);
+
 			dialog.dialog(config);
-			
-			/*
-			var d = dialog.parents('.ui-dialog:first');
-			d.draggable({ helper: function( event ) {
-					
-				return $( "<div>I'm a custom helper</div>" )
-					.css({background: '#eee'})
-					.width(d.width())
-					.height(d.height())
-				;
-			}});
-			*/
-			
+
 			// Add window
 			t.windows[id] = w;
-			
+
 			t.count++;
 
 			return w;
 		},
-		
+
 		_findId : function(w) {
-			
+	
 			var t = this;
 
 			if (typeof(w) == 'string')
@@ -181,19 +177,19 @@
 
 			return w;
 		},
-		
+
 		resizeBy : function(dw, dh, id) {
-		
-			return;
+
+				return;
 		},
-		
+
 		focus : function(id) {
-			
-			return; 
+	
+				return; 
 		},
 
 		close : function(win, id) {
-			
+	
 			var t = this, w, d = DOM.doc, ix = 0, fw, id;
 
 			id = t._findId(id || win);
@@ -207,26 +203,26 @@
 			t.count--;
 
 			if (w = t.windows[id]) {
-				
+		
 				t.onClose.dispatch(t);
-				
+	
 				Event.clear(id);
 				Event.clear(id + '_ifr');
 
 				DOM.setAttrib(id + '_ifr', 'src', 'javascript:""'); // Prevent leak
-				
+	
 				w.element.dialog('destroy').remove();
-				
+	
 				delete t.windows[id];
 			}
 		},
 
 		setTitle : function(w, ti) {
-			
+	
 			var e;
-			
+
 			w = this._findId(w);
-			
+
 			if (e = DOM.get('ui-dialog-title-dialog-' + w))
 				e.innerHTML = DOM.encode(ti);
 		},
