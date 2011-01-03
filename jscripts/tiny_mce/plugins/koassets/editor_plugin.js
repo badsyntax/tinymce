@@ -41,7 +41,3 @@
 	// Register plugin
 	tinymce.PluginManager.add('koassets', tinymce.plugins.KOassets);
 })();
-~																						
-~																						
-~																						
-~		 
