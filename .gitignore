@@ -10,7 +10,6 @@ docs
 *.bak
 *.log
 .DS_Store
-editor_plugin.js
 editor_template.js
 jscripts/tiny_mce/jquery.tinymce.js
 jscripts/tiny_mce/tiny_mce.js
